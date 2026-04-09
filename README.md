@@ -108,6 +108,16 @@ To add or improve a skill:
 
 ---
 
+## POC Outcomes
+
+The following was produced by running `create-pr` on a real branch against AMP-440:
+
+- **GitHub PR:** https://github.com/hmcts/service-cp-crime-hearing-case-event-subscription/pull/211
+- **JIRA comments:** GitHub PR link + Confluence release page link both posted automatically on [AMP-440](https://tools.hmcts.net/jira/browse/AMP-440)
+- **Confluence release page:** https://tools.hmcts.net/confluence/spaces/AMP/pages/1958295257/Release+AMP-440+-+SIT+Deployment+-+09+Apr+2026
+
+---
+
 ## License
 
 MIT
