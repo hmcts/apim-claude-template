@@ -10,7 +10,7 @@ A shared library of [Claude Code](https://claude.ai/claude-code) skills for HMCT
 |-------|---------|-------------|
 | Create PR | `create-pr` | Generates a structured PR, posts GitHub PR link to JIRA, and optionally creates a Confluence release page |
 
-More skills coming — see the [spike ticket](https://tools.hmcts.net/jira/browse/AMP) for the full planned workflow.
+More skills coming — see the [spike ticket](https://tools.hmcts.net/jira/browse/AMP-440) for the full planned workflow.
 
 ---
 
@@ -111,3 +111,4 @@ To add or improve a skill:
 ## License
 
 MIT
+ 
