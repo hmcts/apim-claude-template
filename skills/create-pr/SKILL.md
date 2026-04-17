@@ -2,7 +2,10 @@
 
 ## Trigger
 
-Invoke this skill when a user asks to create a pull request, raise a PR, or open a PR.
+Invoke this skill when a user asks to:
+- Create a pull request, raise a PR, or open a PR
+- Address or action code review comments on an existing PR
+- Update a PR based on reviewer feedback
 
 Invocation command: `/create-pr`
 
@@ -22,14 +25,12 @@ git diff origin/main..HEAD
 git log origin/main..HEAD --format="%B" | head -100
 ```
 
-If `origin/main` does not exist, try `origin/master` instead.
-
 ### Step 2 — Extract the JIRA ticket
 
 From the branch name, extract the JIRA ticket reference using these rules:
 
-- Branch patterns: `dev/AMP-433`, `dev/AMP433`, `feature/AMP-123-description`, `AMP-456`
-- Normalise to uppercase with hyphen: `AMP-433` (not `AMP433`)
+- Branch patterns: `dev/AMP-346`, `dev/AMP346`, `dev/AMP-346-description`, `AMP-346`
+- Normalise to uppercase with hyphen: `AMP-346` (not `AMP346`)
 - If no ticket is found in the branch name, scan the most recent commit message for a pattern like `AMP-NNN`
 - If still not found, prompt the user: *"I couldn't find a JIRA ticket in the branch name. What's the ticket reference (e.g. AMP-433)?"*
 
@@ -38,25 +39,62 @@ Construct the JIRA URL:
 https://tools.hmcts.net/jira/browse/<TICKET>
 ```
 
-### Step 3 — Understand the changes
+### Step 3 — Ensure JIRA ticket is In Progress
+
+Check the ticket status and automatically move it to **In Progress** if it isn't already:
+
+```bash
+JIRA_STATUS=$(curl -s \
+  -H "Authorization: Bearer ${JIRA_TOKEN}" \
+  "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>" \
+  | jq -r '.fields.status.name')
+echo "$JIRA_STATUS"
+```
+
+- If the status is already **`"In Progress"`**, do nothing and proceed silently.
+- If the status is **anything else** (e.g. `"To Do"`, `"Backlog"`), automatically transition it:
+
+    1. Fetch available transitions to find the "In Progress" transition ID:
+       ```bash
+       curl -s \
+         -H "Authorization: Bearer ${JIRA_TOKEN}" \
+         "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions" \
+         | jq '.transitions[] | {id: .id, name: .name}'
+       ```
+    2. POST the transition using the ID whose name matches "In Progress":
+       ```bash
+       curl -s -X POST \
+         -H "Authorization: Bearer ${JIRA_TOKEN}" \
+         -H "Content-Type: application/json" \
+         -d "{\"transition\": {\"id\": \"<IN_PROGRESS_TRANSITION_ID>\"}}" \
+         "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions"
+       ```
+    3. Inform the user: *"Moved `<TICKET>` to In Progress."*
+
+- If the status is **`"Done"`** or **`"Closed"`**, warn the user and ask whether to proceed:
+  *"The JIRA ticket `<TICKET>` is `<STATUS>`. Are you sure you want to raise a PR against it?"*
+- If the API call fails (missing credentials or network error), warn the user and ask whether to proceed:
+  *"I couldn't check the status of `<TICKET>` — JIRA API returned an error. Do you want to proceed anyway?"*
+
+### Step 4 — Understand the changes
 
 From the git diff and commit log, determine:
 
 **What changed** — concrete list of files/components modified:
 - Group by type: e.g. build files, test infrastructure, application code, config, docker
-- Be specific: "Removed TestContainers dependencies from build.gradle" not "Updated build file"
+- Be specific: "Added `subscriptionKey` security scheme to `components/securitySchemes` in the OpenAPI spec" not "Updated OpenAPI spec"
 
 **Why it's needed** — the business or technical rationale:
 - Look for clues in commit messages, branch name, and the nature of the diff
 - If the rationale isn't clear from the code, ask the user: *"Can you give me a one-line summary of why this change is needed, for the PR description?"*
 
-### Step 4 — Draft the PR
+### Step 5 — Draft the PR
 
 **Title format:**
 ```
 <TICKET> <concise description of the change in plain English>
 ```
-Example: `AMP-433 Replace TestContainers with Docker Compose for integration tests`
+Example: `AMP-346 Instil subscription key in client request to API`
 
 Keep the title under 72 characters. Do not include "changes" as the only description — be specific.
 
@@ -78,7 +116,7 @@ Keep the title under 72 characters. Do not include "changes" as the only descrip
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-### Step 5 — Check for uncommitted changes
+### Step 6 — Check for uncommitted changes
 
 Before creating the PR, run:
 ```bash
@@ -90,7 +128,78 @@ git log origin/main..HEAD --oneline
 - If the **branch hasn't been pushed**, run `git push -u origin <branch>` first
 - If there are **no commits ahead of main**, stop and tell the user: *"There are no commits ahead of main on this branch. Nothing to PR."*
 
-### Step 6 — Create the PR and update JIRA
+### Step 7 — Check for an existing open PR
+
+Before creating a new PR, check if one already exists for the current branch:
+
+```bash
+gh pr view --json number,url,title,state 2>/dev/null
+```
+
+- If an **open PR already exists**, switch to **Amend PR mode** (see below) instead of creating a new one.
+- If no PR exists, proceed with creation as normal.
+
+---
+
+## Amend PR Mode
+
+Triggered when an open PR already exists for the current branch, or the user asks to address review comments.
+
+### Amend Step 1 — Fetch review comments
+
+```bash
+gh pr view --json number,url
+gh api repos/hmcts/api-cp-crime-hearing-results-document-subscription/pulls/<PR_NUMBER>/reviews --jq '.[].body'
+gh pr comments --json body,author
+gh api repos/hmcts/api-cp-crime-hearing-results-document-subscription/pulls/<PR_NUMBER>/comments --jq '.[] | {path: .path, line: .original_line, comment: .body, author: .user.login}'
+```
+
+List all unresolved review comments grouped by file. Present a summary to the user:
+- *"I found N review comments. Here's a summary: ..."*
+
+The developer is responsible for addressing the comments. Once they have made the fixes, proceed to Amend Step 2.
+
+### Amend Step 2 — Confirm fixes are ready
+
+Ask the user: *"Have you made the fixes? I'll commit and push them now."*
+
+Wait for confirmation before proceeding.
+
+### Amend Step 3 — Commit the fixes
+
+Stage and commit only the files changed in response to review feedback:
+
+```bash
+git add <specific files>
+git commit -m "<TICKET>: address PR review comments — <brief summary>"
+```
+
+Do not amend existing commits. Always create a new commit.
+
+### Amend Step 4 — Push and update the PR
+
+```bash
+git push
+```
+
+Then update the PR description to note the review comments have been addressed. Append to the existing body:
+
+```markdown
+## Review changes (<date>)
+- <what was changed in response to review>
+```
+
+Use:
+```bash
+gh pr edit --body "$(cat <<'EOF'
+<updated body>
+EOF
+)"
+```
+
+---
+
+### Step 8 — Create the PR
 
 **Create the PR** and capture the returned URL:
 
@@ -105,120 +214,35 @@ EOF
 echo "$PR_URL"
 ```
 
-**Post the PR link as a comment on the JIRA ticket** using the JIRA REST API:
+### Step 9 — Transition JIRA ticket to In Review
 
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer ${JIRA_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d "{\"body\": \"GitHub PR: ${PR_URL}\"}" \
-  "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/comment"
-```
+After the PR is successfully created, move the ticket from "In Progress" to "In Review" (or "Code Review" — match the transition name available in the project):
 
-`JIRA_TOKEN` is a JIRA Personal Access Token. If it is not set in the environment, prompt the user:
-*"I need your JIRA Personal Access Token to post the PR link to the ticket. Set it with: `export JIRA_TOKEN=<your-token>`. You can generate one at https://tools.hmcts.net/jira/secure/ViewProfile.jspa under Personal Access Tokens."*
+1. Fetch available transitions:
+   ```bash
+   curl -s \
+     -H "Authorization: Bearer ${JIRA_TOKEN}" \
+     "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions" \
+     | jq '.transitions[] | {id: .id, name: .name}'
+   ```
+2. POST the transition whose name matches "In Review" or "Code Review":
+   ```bash
+   curl -s -X POST \
+     -H "Authorization: Bearer ${JIRA_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d "{\"transition\": {\"id\": \"<IN_REVIEW_TRANSITION_ID>\"}}" \
+     "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions"
+   ```
+3. Inform the user: *"Moved `<TICKET>` to In Review."*
 
-Use a heredoc for the PR body to preserve formatting. Output the PR URL to the user after creation.
-
-### Step 7 — (Optional) Create Confluence release page
-
-Invoke this step when the user indicates the ticket is ready for SIT (e.g. "ready to release", "create release note", "ship to SIT").
-
-**Query JIRA for all tickets in the release:**
-
-```bash
-curl -s \
-  -H "Authorization: Bearer ${JIRA_TOKEN}" \
-  "https://tools.hmcts.net/jira/rest/api/2/search?jql=fixVersion=<VERSION>+AND+project=AMP" \
-  | jq '[.issues[] | {key: .key, summary: .fields.summary, status: .fields.status.name, type: .fields.issuetype.name}]'
-```
-
-**Validate readiness** — if any ticket status is not `QA Done` or `Done`, warn the user before proceeding:
-*"The following tickets are not yet QA signed off: AMP-XXX, AMP-YYY. Do you want to proceed anyway?"*
-
-**Create the Confluence release page** under the AMP releases parent page:
-
-```bash
-curl -s -X POST \
-  -H "Authorization: Bearer ${CONFLUENCE_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"type\": \"page\",
-    \"title\": \"Release <VERSION> — SIT Deployment — $(date +'%d %b %Y')\",
-    \"ancestors\": [{\"id\": \"<PARENT_PAGE_ID>\"}],
-    \"space\": {\"key\": \"AMP\"},
-    \"body\": {
-      \"storage\": {
-        \"value\": \"<confluence-wiki-markup>\",
-        \"representation\": \"storage\"
-      }
-    }
-  }" \
-  "https://tools.hmcts.net/confluence/rest/api/content"
-```
-
-**Release page format:**
-
-```
-<h2>Environment Sign-off</h2>
-<table>
-  <tr><th>Environment</th><th>Status</th><th>Date</th></tr>
-  <tr><td>Dev</td><td>✅ Done</td><td><date></td></tr>
-  <tr><td>QA</td><td>✅ Done</td><td><date></td></tr>
-  <tr><td>SIT</td><td>⏳ Pending</td><td>-</td></tr>
-</table>
-
-<h2>Tickets in this release</h2>
-<table>
-  <tr><th>Ticket</th><th>Summary</th><th>Type</th><th>Status</th></tr>
-  <!-- one row per JIRA ticket -->
-</table>
-
-<h2>Deployment steps</h2>
-<ul>
-  <li>Raise deployment request</li>
-  <li>Notify SIT team</li>
-  <li>Deploy to SIT</li>
-  <li>Run smoke tests</li>
-</ul>
-
-<h2>Rollback plan</h2>
-Redeploy previous version: <PREVIOUS_VERSION>
-
-<h2>Sign-off</h2>
-<table>
-  <tr><th>Role</th><th>Name</th><th>Date</th></tr>
-  <tr><td>Dev Lead</td><td></td><td></td></tr>
-  <tr><td>QA Lead</td><td></td><td></td></tr>
-  <tr><td>SIT Lead</td><td></td><td></td></tr>
-</table>
-```
-
-**Post the Confluence page link as a comment on each JIRA ticket:**
-
-```bash
-for TICKET in <ticket-list>; do
-  curl -s -X POST \
-    -H "Authorization: Bearer ${JIRA_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d "{\"body\": \"Release note: <CONFLUENCE_PAGE_URL>\"}" \
-    "https://tools.hmcts.net/jira/rest/api/2/issue/${TICKET}/comment"
-done
-```
-
-`CONFLUENCE_TOKEN` is a Confluence Personal Access Token. If not set, prompt the user:
-*"I need your Confluence Personal Access Token. Set it with: `export CONFLUENCE_TOKEN=<your-token>`. Generate one at https://tools.hmcts.net/confluence/plugins/servlet/pat — it may be the same as your JIRA_TOKEN."*
-
-`PARENT_PAGE_ID` is the Confluence page ID of the releases folder. If not known, ask the user:
-*"What is the Confluence parent page ID for release pages? You can find it in the page URL: `/pages/<ID>/`."*
-
----
+If the transition fails, warn the user but do not block — the PR has already been created.
 
 ## Rules
 
 - **Never use "changes" as the sole PR title descriptor.** Always describe what the change actually does.
 - **Always include the JIRA link** — if the ticket can't be found, ask before creating the PR.
 - **Never force-push** or amend existing commits without explicit user instruction.
+- **Review responses must be new commits** — never amend existing commits to address review comments; always commit fresh so the reviewer can see what changed.
 - **Always confirm** before pushing the branch if it hasn't been pushed yet.
 - If `gh` CLI is not authenticated, tell the user to run `gh auth login` first.
 
@@ -226,29 +250,27 @@ done
 
 ## Example output
 
-**Branch:** `dev/claude-automated-pr-jira-update`
-**Extracted ticket:** `AMP-440`
+**Branch:** `dev/AMP-346`
+**Extracted ticket:** `AMP-346`
 
 **Title:**
 ```
-AMP-440 Add README verification section for Claude automated PR generation
+AMP-346 Add subscription key security scheme and 401/403 responses to OpenAPI spec
 ```
 
 **Body:**
 ```markdown
 ## JIRA
-[AMP-440](https://tools.hmcts.net/jira/browse/AMP-440)
+[AMP-346](https://tools.hmcts.net/jira/browse/AMP-346)
 
 ## What changed
-- Added `## This is to verify Claude automated PR generation with JIRA update` section to `README.md` as a test marker to confirm the Claude Code `/create-pr` skill correctly picks up changes, extracts the JIRA ticket from the branch name, and posts the PR link back to JIRA as a comment
+- Added `subscriptionKey` security scheme (`Ocp-Apim-Subscription-Key` header) to `components/securitySchemes` in the OpenAPI spec
+- Updated global security to require both `bearerAuth` and `subscriptionKey`
+- Added `401` and `403` responses to all endpoints that were missing them, with descriptive messages
+- Added `SubscriptionKeySecurityTest` to verify the spec defines the subscription key scheme, global security requirements, and that all endpoints declare 401/403 responses
 
 ## Why it's needed
-Verification that the Claude Code `/create-pr` skill end-to-end flow works correctly — branch name extraction, JIRA link construction, and posting the GitHub PR link as a JIRA comment — before rolling out the skill to the wider team.
+The API must enforce APIM subscription key authentication alongside JWT bearer auth. The OpenAPI spec was missing the `subscriptionKey` security scheme and was lacking 401/403 response definitions on several endpoints, which left the contract incomplete and untested.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
-```
-
-**JIRA comment posted:**
-```
-GitHub PR: https://github.com/hmcts/service-cp-crime-hearing-case-event-subscription/pull/210
 ```
