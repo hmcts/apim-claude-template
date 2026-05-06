@@ -1,0 +1,11 @@
+{
+  "name": "create-pr",
+  "version": "1.0.0",
+  "description": "Create HMCTS APIM pull requests with JIRA integration — extracts ticket from branch, drafts rich PR descriptions, and transitions JIRA status",
+  "author": {
+    "name": "HMCTS APIM",
+    "email": "srivani@scrumconnect.com"
+  },
+  "license": "MIT",
+  "keywords": ["pr", "pull-request", "jira", "hmcts", "apim", "git", "github"]
+}
