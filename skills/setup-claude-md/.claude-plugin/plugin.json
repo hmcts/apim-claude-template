@@ -1,0 +1,11 @@
+{
+  "name": "setup-claude-md",
+  "version": "1.0.0",
+  "description": "Bootstrap a local .claude/CLAUDE.md with live @imports from apim-claude-template shared templates — run once per repo per developer",
+  "author": {
+    "name": "HMCTS APIM",
+    "email": "srivani@scrumconnect.com"
+  },
+  "license": "MIT",
+  "keywords": ["claude-md", "setup", "onboarding", "hmcts", "apim", "templates"]
+}
