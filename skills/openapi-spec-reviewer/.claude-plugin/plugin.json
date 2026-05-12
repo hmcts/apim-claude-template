@@ -1,0 +1,11 @@
+{
+  "name": "openapi-spec-reviewer",
+  "version": "1.0.0",
+  "description": "Review HMCTS OpenAPI v3 specs against four lenses: data-sharing policy (UK GDPR/DPA 2018), infrastructure SLA (Azure APIM/AKS targets), HMCTS API standards, and security standards (OAuth 2, TLS, input validation)",
+  "author": {
+    "name": "HMCTS APIM",
+    "email": "srivani@scrumconnect.com"
+  },
+  "license": "MIT",
+  "keywords": ["openapi", "spec-review", "hmcts", "apim", "security", "gdpr", "dpa2018", "azure"]
+}
