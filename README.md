@@ -19,6 +19,64 @@ Claude Code resolves these on every session. When a shared template changes here
 
 ---
 
+## Workflow
+
+```mermaid
+flowchart TD
+    subgraph INSTALL["⚙️ One-time setup (per developer machine)"]
+        A[Developer installs Claude Code\nnpm install -g @anthropic-ai/claude-code] --> B[Install agentic-plugins-marketplace\n/marketplace]
+        B --> C[Install apim-claude-template plugin\nfrom marketplace]
+        C --> D[4 skills now available globally\n/create-pr  /setup-claude-md\n/generate-repo-doc  /openapi-spec-reviewer]
+    end
+
+    subgraph ONBOARD["📦 New repo onboarding (run once per repo)"]
+        E[New api-cp-* or service-cp-* repo created] --> F[Developer runs\n/generate-repo-doc]
+        F --> G[Skill reads real source files\nopenapi-spec.yml · build.gradle\ntest classes · CI workflows]
+        G --> H[Writes apim-claude-template/\ntemplates/repos/repo-name.md]
+        H --> I[PR raised on apim-claude-template\nreviewed and merged]
+        I --> J[Developer runs\n/setup-claude-md in the repo]
+        J --> K[Creates .claude/CLAUDE.md\ngitignored · 3 @import lines]
+    end
+
+    subgraph SESSION["🔄 Every Claude Code session"]
+        K --> L[Claude Code starts]
+        L --> M[Reads .claude/CLAUDE.md\nresolves @imports]
+        M --> N1[shared-code-rules.md]
+        M --> N2[api-spec-shared.md\nor service-shared.md]
+        M --> N3[repos/repo-name.md]
+        N1 & N2 & N3 --> O[Claude has full context\nteam rules · patterns · repo specifics]
+    end
+
+    subgraph COMMAND["⚡ When a skill command is fired"]
+        O --> P{Which command?}
+
+        P -->|/create-pr| Q[Reads git branch · extracts JIRA ticket\nDrafts PR body · gh pr create\nPosts PR link to JIRA]
+
+        P -->|/generate-repo-doc| R[Re-reads source files\nRegenerates templates/repos/repo-name.md\nCommits to apim-claude-template]
+
+        P -->|/setup-claude-md| S[Writes .claude/CLAUDE.md\nUpdates .gitignore]
+
+        P -->|/openapi-spec-reviewer| T[Loads 4 knowledge files\ndata-sharing-policy\ninfrastructure-sla\napi-standards · security-standards]
+        T --> U[Reviews spec against\neach lens in sequence]
+        U --> V[Scored report\nCritical · Warning · Info\nReadiness score /100]
+    end
+
+    subgraph PROPAGATE["🔁 When shared templates change"]
+        W[Team edits apim-claude-template\nshared-code-rules.md or\napi-spec-shared.md etc.] --> X[PR raised · reviewed · merged]
+        X --> Y[Every developer gets the change\non next Claude Code session\nZero per-repo action needed]
+    end
+```
+
+| Phase | Who | When |
+|---|---|---|
+| **Install** | Each developer | Once per machine |
+| **Onboard repo** | Repo creator | Once per new repo |
+| **Session** | Automatic | Every Claude Code session |
+| **Command** | Developer | On demand |
+| **Propagate** | Team via PR | When standards change |
+
+---
+
 ## Skills
 
 | Command | What it does |
