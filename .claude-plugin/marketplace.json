@@ -12,6 +12,30 @@
       "version": "1.0.0",
       "category": "skill",
       "tags": ["pr", "pull-request", "jira", "hmcts", "apim", "git", "github"]
+    },
+    {
+      "name": "setup-claude-md",
+      "source": "./skills/setup-claude-md",
+      "description": "Bootstrap a local .claude/CLAUDE.md with live @imports from apim-claude-template shared templates — run once per repo per developer",
+      "version": "1.0.0",
+      "category": "skill",
+      "tags": ["claude-md", "setup", "onboarding", "hmcts", "apim", "templates"]
+    },
+    {
+      "name": "generate-repo-doc",
+      "source": "./skills/generate-repo-doc",
+      "description": "Auto-generate a repo-specific CLAUDE.md template by reading OpenAPI spec, build files, source layout, and CI workflows — outputs to apim-claude-template/templates/repos/",
+      "version": "1.0.0",
+      "category": "skill",
+      "tags": ["claude-md", "documentation", "openapi", "hmcts", "apim", "templates"]
+    },
+    {
+      "name": "openapi-spec-reviewer",
+      "source": "./skills/openapi-spec-reviewer",
+      "description": "Review HMCTS OpenAPI v3 specs against four lenses: data-sharing policy (UK GDPR/DPA 2018), infrastructure SLA (Azure APIM/AKS), HMCTS API standards, and security standards — returns a scored report with Critical/Warning/Info findings",
+      "version": "1.0.0",
+      "category": "skill",
+      "tags": ["openapi", "spec-review", "security", "gdpr", "hmcts", "apim", "azure", "compliance"]
     }
   ]
 }
