@@ -3,10 +3,10 @@
 ## Trigger
 
 Invoke this skill when a user asks to:
-- Generate the repo-specific Claude template
+- Generate the repo-specific Claude context
 - Auto-generate Claude documentation for this repo
 - Run `/generate-repo-doc`
-- Create or refresh the `templates/repos/<repo-name>.md` file
+- Create or refresh the `CLAUDE.md` file in this repo
 
 Invocation command: `/generate-repo-doc`
 
@@ -19,9 +19,8 @@ Invocation command: `/generate-repo-doc`
 ```bash
 REPO_NAME=$(basename "$PWD")
 REPO_PATH="$PWD"
-TEMPLATE_PATH="../../apim-claude-template/templates/repos/${REPO_NAME}.md"
 echo "Repo: $REPO_NAME"
-echo "Output: $TEMPLATE_PATH"
+echo "Output: $REPO_PATH/CLAUDE.md"
 ```
 
 ### Step 2 — Detect repo type
@@ -96,9 +95,9 @@ find src/main/java -name "*Controller*.java" -not -path "*/openapi/*" | head -5
 ls .github/workflows/
 ```
 
-### Step 8A — Generate the template file
+### Step 8A — Generate CLAUDE.md in this repo
 
-Write to `../../apim-claude-template/templates/repos/${REPO_NAME}.md` with this structure:
+Write to `./CLAUDE.md` (current repo root) with this structure:
 
 ```markdown
 ## Repo: <repo-name>
@@ -206,18 +205,18 @@ find src/test/java -name "*.java" | sort
 find src/apiTest/java -name "*.java" 2>/dev/null | sort
 ```
 
-### Step 9B — Generate the template file
+### Step 9B — Generate CLAUDE.md in this repo
 
-Write to `../../apim-claude-template/templates/repos/${REPO_NAME}.md` with this structure:
+Write to `./CLAUDE.md` (current repo root) with this structure:
 
 ```markdown
 ## Repo: <repo-name>
 
-<One sentence: what this service does and which api-cp-* interface it implements>
+<One sentence: what this service does and which api-cp-* contract it implements>
 
 **Pattern**: Stateless proxy | DB-backed
 **Spring Boot version**: x.x.x (current — target 4.0.6+ per upgrade cycle)
-**Implements**: `api-cp-<name>` generated interface(s)
+**Implements**: `api-cp-<name>`
 
 ## Infrastructure
 
@@ -226,7 +225,7 @@ Write to `../../apim-claude-template/templates/repos/${REPO_NAME}.md` with this 
 
 ## Source Structure
 
-[Key classes by package — one line each: `ClassName` — what it does]
+[Key classes by package — one line each describing runtime behaviour, not interface names]
 
 ## Environment Variables
 
@@ -249,28 +248,33 @@ Write to `../../apim-claude-template/templates/repos/${REPO_NAME}.md` with this 
 
 ---
 
-## Step N — Commit to apim-claude-template
+## Step N — Commit CLAUDE.md to this repo
 
 After generating the file:
 
 ```bash
-cd ../../apim-claude-template
-git add templates/repos/${REPO_NAME}.md
-git commit -m "feat: add repo-specific CLAUDE.md template for ${REPO_NAME}"
-cd -
+git add CLAUDE.md
+git commit -m "docs(claude): generate repo context for ${REPO_NAME}
+
+Captures repo-specific architecture, endpoints, env vars, and debugging
+patterns for Claude Code context. Shared team standards are live-imported
+from apim-claude-template via .claude/CLAUDE.md — only repo-unique content
+lives here."
 ```
 
 Tell the user:
-> ✓ Generated `apim-claude-template/templates/repos/${REPO_NAME}.md` and committed.
+> ✓ Generated `CLAUDE.md` in this repo and committed.
 >
-> Review the file, then run `/setup-claude-md` in this repo (and in any other repo that needs the same template).
+> This file is committed here — update it in the same PR as any architectural change.
+> Run `/setup-claude-md` to create the gitignored `.claude/CLAUDE.md` that live-imports shared standards alongside this file.
 
 ---
 
 ## Rules
 
 - **Read actual source files** — never invent class names, endpoint paths, or env var names.
-- **Idempotent** — re-running overwrites the template file and creates a new commit; this is safe.
-- **Do not include shared content** — commands, layering rules, TracingFilter standard, Docker standard, CI standard set, and publishing details are all in the shared templates. Only capture what is unique to this repo.
+- **Idempotent** — re-running overwrites `CLAUDE.md` and creates a new commit; this is safe.
+- **Do not include shared content** — commands, layering rules, TracingFilter standard, Docker standard, CI standard set, and publishing details are in the shared templates in apim-claude-template. Only capture what is unique to this repo.
+- **Service templates describe runtime behaviour only** — do not include generated interface class names or generated model class names; those belong in the api-cp-* repo's CLAUDE.md.
 - **Flag technical debt** — if you discover missing `@JsonInclude`, deprecated inputSpec syntax, or outdated Spring Boot / OpenAPI Generator versions, add a note under "Generator Config Notes" or "Repo-Specific Notes" — but do not change the source code.
-- **Commit to apim-claude-template** — the generated file is owned by the template repo, not the source repo.
+- **Commit stays in this repo** — CLAUDE.md is owned by this repo, not apim-claude-template.

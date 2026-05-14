@@ -7,15 +7,21 @@ Provides a single source of truth for AI context across all `api-cp-*` and `serv
 
 ## How it works
 
-Each `api-cp-*` / `service-cp-*` repo has a **local, gitignored** `.claude/CLAUDE.md` containing three `@import` lines:
+Each `api-cp-*` / `service-cp-*` repo carries two context files that Claude Code loads automatically on every session:
 
+| File | Committed? | Owned by | Contains |
+|---|---|---|---|
+| `CLAUDE.md` (repo root) | Yes | Each repo | Repo-specific: endpoints, env vars, infra, architecture rules |
+| `.claude/CLAUDE.md` | No — gitignored | Developer local | 2 `@import` lines pointing to shared templates here |
+
+The `.claude/CLAUDE.md` for an `api-cp-*` repo looks like:
 ```
 @../../apim-claude-template/templates/shared-code-rules.md
 @../../apim-claude-template/templates/api-spec-shared.md
-@../../apim-claude-template/templates/repos/api-cp-<repo-name>.md
 ```
 
-Claude Code resolves these on every session. When a shared template changes here, all repos pick it up automatically — no per-repo commits needed.
+When a shared template changes here, all repos pick it up automatically — no per-repo commits needed.
+When a repo's architecture changes, update `CLAUDE.md` in that repo — no apim-claude-template PR needed.
 
 ---
 
@@ -32,18 +38,18 @@ flowchart TD
     subgraph ONBOARD["📦 New repo onboarding (run once per repo)"]
         E[New api-cp-* or service-cp-* repo created] --> F[Developer runs\n/generate-repo-doc]
         F --> G[Skill reads real source files\nopenapi-spec.yml · build.gradle\ntest classes · CI workflows]
-        G --> H[Writes apim-claude-template/\ntemplates/repos/repo-name.md]
-        H --> I[PR raised on apim-claude-template\nreviewed and merged]
-        I --> J[Developer runs\n/setup-claude-md in the repo]
-        J --> K[Creates .claude/CLAUDE.md\ngitignored · 3 @import lines]
+        G --> H[Writes CLAUDE.md into this repo\ncommitted here · same PR as code]
+        H --> I[Developer runs\n/setup-claude-md in the repo]
+        I --> K[Creates .claude/CLAUDE.md\ngitignored · 2 @import lines]
     end
 
     subgraph SESSION["🔄 Every Claude Code session"]
         K --> L[Claude Code starts]
-        L --> M[Reads .claude/CLAUDE.md\nresolves @imports]
-        M --> N1[shared-code-rules.md]
-        M --> N2[api-spec-shared.md\nor service-shared.md]
-        M --> N3[repos/repo-name.md]
+        L --> M1[Reads CLAUDE.md\nrepo root · committed]
+        L --> M2[Reads .claude/CLAUDE.md\nresolves @imports]
+        M1 --> N1[Repo-specific context\nendpoints · env vars · rules]
+        M2 --> N2[shared-code-rules.md]
+        M2 --> N3[api-spec-shared.md\nor service-shared.md]
         N1 & N2 & N3 --> O[Claude has full context\nteam rules · patterns · repo specifics]
     end
 
@@ -142,44 +148,41 @@ That's it. Claude Code will load shared rules + category standards + repo-specif
 cd ~/HMCTS/APIM
 git clone git@github.com:hmcts/api-cp-<new-name>.git
 
-# 2. Generate the repo-specific template
+# 2. Generate CLAUDE.md — writes directly into the new repo
 cd api-cp-<new-name>
 /generate-repo-doc
+# Commits CLAUDE.md to this repo — raise a PR here, not in apim-claude-template
 
-# 3. Raise a PR on apim-claude-template for the generated file
-cd ../../apim-claude-template
-gh pr create --base master \
-  --head dev/add-api-cp-<new-name> \
-  --title "feat: add repo template for api-cp-<new-name>"
-
-# 4. After the PR is merged, set up local Claude context
-cd ../api-cp-<new-name>
+# 3. Set up local Claude context (each developer, once per machine)
 /setup-claude-md
 ```
 
 ---
 
-## Template structure
+## Structure
 
 ```
-templates/
-├── shared-code-rules.md        ← code rules identical for all repos
-├── api-spec-shared.md          ← shared guidance for all api-cp-* repos
-├── service-shared.md           ← shared guidance for all service-cp-* repos
-└── repos/
-    ├── api-cp-<name>.md        ← auto-generated per repo
-    └── service-cp-<name>.md
+apim-claude-template/
+├── templates/
+│   ├── shared-code-rules.md    ← team-wide code rules (all repos)
+│   ├── api-spec-shared.md      ← shared guidance for all api-cp-* repos
+│   └── service-shared.md       ← shared guidance for all service-cp-* repos
+└── skills/
+    ├── create-pr/
+    ├── setup-claude-md/
+    ├── generate-repo-doc/
+    └── openapi-spec-reviewer/
+        └── knowledge/
+            ├── data-sharing-policy.md   ← UK GDPR / DPA 2018 rules
+            ├── infrastructure-sla.md    ← Azure APIM / AKS SLA targets
+            ├── api-standards.md         ← HMCTS RESTful API standards
+            └── security-standards.md   ← OAuth 2, TLS, input validation
 
-skills/
-├── create-pr/
-├── setup-claude-md/
-├── generate-repo-doc/
-└── openapi-spec-reviewer/
-    └── knowledge/
-        ├── data-sharing-policy.md   ← UK GDPR / DPA 2018 rules
-        ├── infrastructure-sla.md    ← Azure APIM / AKS SLA targets
-        ├── api-standards.md         ← HMCTS RESTful API standards
-        └── security-standards.md   ← OAuth 2, TLS, input validation
+Each api-cp-* / service-cp-* repo:
+├── CLAUDE.md                   ← committed — repo-specific context
+└── .claude/
+    ├── CLAUDE.md               ← gitignored — 2 shared @import lines
+    └── settings.local.json     ← committed — Claude Code settings
 ```
 
 ---
@@ -191,7 +194,7 @@ skills/
 | Team-wide code rule | `templates/shared-code-rules.md` | Any developer | Automatic — all repos |
 | API spec pattern | `templates/api-spec-shared.md` | Any developer | Automatic — all `api-cp-*` |
 | Service pattern | `templates/service-shared.md` | Any developer | Automatic — all `service-cp-*` |
-| One repo's architecture | `/generate-repo-doc` in that repo | Repo owner | Automatic after PR merged |
+| One repo's architecture | Update `CLAUDE.md` in that repo | Repo owner | Committed in same PR as code change |
 | OpenAPI review policy | `skills/openapi-spec-reviewer/knowledge/` | APIM team | Automatic — all reviewers |
 
 All changes go through a PR against `master`. One merged PR = all repos updated.
