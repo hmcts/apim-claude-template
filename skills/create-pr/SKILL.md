@@ -39,44 +39,7 @@ Construct the JIRA URL:
 https://tools.hmcts.net/jira/browse/<TICKET>
 ```
 
-### Step 3 — Ensure JIRA ticket is In Progress
-
-Check the ticket status and automatically move it to **In Progress** if it isn't already:
-
-```bash
-JIRA_STATUS=$(curl -s \
-  -H "Authorization: Bearer ${JIRA_TOKEN}" \
-  "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>" \
-  | jq -r '.fields.status.name')
-echo "$JIRA_STATUS"
-```
-
-- If the status is already **`"In Progress"`**, do nothing and proceed silently.
-- If the status is **anything else** (e.g. `"To Do"`, `"Backlog"`), automatically transition it:
-
-    1. Fetch available transitions to find the "In Progress" transition ID:
-       ```bash
-       curl -s \
-         -H "Authorization: Bearer ${JIRA_TOKEN}" \
-         "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions" \
-         | jq '.transitions[] | {id: .id, name: .name}'
-       ```
-    2. POST the transition using the ID whose name matches "In Progress":
-       ```bash
-       curl -s -X POST \
-         -H "Authorization: Bearer ${JIRA_TOKEN}" \
-         -H "Content-Type: application/json" \
-         -d "{\"transition\": {\"id\": \"<IN_PROGRESS_TRANSITION_ID>\"}}" \
-         "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions"
-       ```
-    3. Inform the user: *"Moved `<TICKET>` to In Progress."*
-
-- If the status is **`"Done"`** or **`"Closed"`**, warn the user and ask whether to proceed:
-  *"The JIRA ticket `<TICKET>` is `<STATUS>`. Are you sure you want to raise a PR against it?"*
-- If the API call fails (missing credentials or network error), warn the user and ask whether to proceed:
-  *"I couldn't check the status of `<TICKET>` — JIRA API returned an error. Do you want to proceed anyway?"*
-
-### Step 4 — Understand the changes
+### Step 3 — Understand the changes
 
 From the git diff and commit log, determine:
 
@@ -88,7 +51,7 @@ From the git diff and commit log, determine:
 - Look for clues in commit messages, branch name, and the nature of the diff
 - If the rationale isn't clear from the code, ask the user: *"Can you give me a one-line summary of why this change is needed, for the PR description?"*
 
-### Step 5 — Draft the PR
+### Step 4 — Draft the PR
 
 **Title format:**
 ```
@@ -116,7 +79,7 @@ Keep the title under 72 characters. Do not include "changes" as the only descrip
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-### Step 6 — Check for uncommitted changes
+### Step 5 — Check for uncommitted changes
 
 Before creating the PR, run:
 ```bash
@@ -128,7 +91,7 @@ git log origin/main..HEAD --oneline
 - If the **branch hasn't been pushed**, run `git push -u origin <branch>` first
 - If there are **no commits ahead of main**, stop and tell the user: *"There are no commits ahead of main on this branch. Nothing to PR."*
 
-### Step 7 — Check for an existing open PR
+### Step 6 — Check for an existing open PR
 
 Before creating a new PR, check if one already exists for the current branch:
 
@@ -199,7 +162,7 @@ EOF
 
 ---
 
-### Step 8 — Create the PR
+### Step 7 — Create the PR
 
 **Create the PR** and capture the returned URL:
 
@@ -214,33 +177,11 @@ EOF
 echo "$PR_URL"
 ```
 
-### Step 9 — Transition JIRA ticket to In Review
-
-After the PR is successfully created, move the ticket from "In Progress" to "In Review" (or "Code Review" — match the transition name available in the project):
-
-1. Fetch available transitions:
-   ```bash
-   curl -s \
-     -H "Authorization: Bearer ${JIRA_TOKEN}" \
-     "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions" \
-     | jq '.transitions[] | {id: .id, name: .name}'
-   ```
-2. POST the transition whose name matches "In Review" or "Code Review":
-   ```bash
-   curl -s -X POST \
-     -H "Authorization: Bearer ${JIRA_TOKEN}" \
-     -H "Content-Type: application/json" \
-     -d "{\"transition\": {\"id\": \"<IN_REVIEW_TRANSITION_ID>\"}}" \
-     "https://tools.hmcts.net/jira/rest/api/2/issue/<TICKET>/transitions"
-   ```
-3. Inform the user: *"Moved `<TICKET>` to In Review."*
-
-If the transition fails, warn the user but do not block — the PR has already been created.
-
 ## Rules
 
 - **Never use "changes" as the sole PR title descriptor.** Always describe what the change actually does.
-- **Always include the JIRA link** — if the ticket can't be found, ask before creating the PR.
+- **Always include the JIRA ticket reference** in the PR title and body link — if the ticket can't be extracted from the branch name, ask the user before creating the PR.
+- **No JIRA API calls** — do not post PR links to JIRA, do not transition ticket status. The `## JIRA` section in the PR body is a plain hyperlink for reviewer convenience only.
 - **Never force-push** or amend existing commits without explicit user instruction.
 - **Review responses must be new commits** — never amend existing commits to address review comments; always commit fresh so the reviewer can see what changed.
 - **Always confirm** before pushing the branch if it hasn't been pushed yet.
