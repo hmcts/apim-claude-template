@@ -140,52 +140,37 @@ After creation, print the release URL.
 
 ---
 
-## Example output
+## Example output format
 
-**Last release:** `v1.2.4` (2026-04-23)
-**Next version:** `v1.2.5`
-**Included:** 7 PRs | **Excluded:** 11 PRs (9 dependabot, 1 docs, 1 chore)
+The content below is generated dynamically at runtime from the actual merged PR bodies
+(`## What changed` and `## Why it's needed` sections). Nothing is hardcoded — every
+entry reflects the real PRs merged since the last tag in the repo you run `/release` from.
 
-```markdown
-## What's changed in v1.2.5
+**Confirmation prompt shown to engineer:**
+```
+Last release:  v<X.Y.Z> (<date>)
+Next version:  v<X.Y.Z+1>
+Included PRs:  N (functional changes)
+Excluded PRs:  M (dependabot: A, chore: B, docs: C)
+
+Draft release notes:
+---
+## What's changed in v<X.Y.Z+1>
 
 ### Bug Fixes
-**#253 — Subscriptions could only register a single event type**
-A constraint introduced in API spec 2.0.8 (`@Size(max=1)`) silently rejected any subscription
-with more than one event type with a 400. Subscribers registering for both
-`PRISON_COURT_REGISTER_GENERATED` and `WEE_Layout5` would fail without a clear error.
-Fixed in spec 2.0.9 — multiple event types per subscription are now supported again.
+**#<N> — <Plain-English summary synthesised from PR body: what was broken and what the fix does>**
 
 ### New Features
-**#250 — Subscribers can now rotate their HMAC signing secret on demand**
-Previously, the HMAC secret issued at registration could never be changed. A new
-`POST /client-subscriptions/{id}/rotate-secret` endpoint generates fresh vault secret
-material under the existing key ID without altering subscription configuration.
-
-**#249 — Hearing ID included in notification callback payload**
-The `hearingId` field is now forwarded to subscribers in every callback notification,
-allowing them to correlate a notification back to its originating hearing without
-making a separate lookup.
-
-**#245 — Event type included in notification callback payload**
-Subscribers can now see which event type triggered a notification directly from the
-callback payload, removing the need for additional API calls to determine context.
+**#<N> — <Plain-English summary synthesised from PR body: what the feature does and why it was added>**
 
 ### Improvements
-**#243 — All processing is now fully asynchronous**
-The last remaining synchronous code paths have been removed. All PCR and HearingNows
-events now flow exclusively through the Service Bus async pipeline, improving throughput
-and reliability under load.
+**#<N> — <Plain-English summary synthesised from PR body: what improved and the benefit>**
+---
 
-**#255 — Integration tests replaced TestContainers with Docker Compose**
-TestContainers was causing port conflicts with host Postgres and added unpredictable
-startup timing. Tests now run against a deterministic Docker Compose stack via
-`./gradlew dockerTest`, with fast-fail if the stack is not running.
-
-**#259 — App starts locally without Azure Key Vault**
-`AZURE_VAULT_ENABLED` now defaults to `false` so developers can run the service
-locally using Docker Compose only. Production deployments continue to use Key Vault
-via the Dockerfile override.
+Shall I create the release?
 ```
 
-**Release title:** `v1.2.5 — Multiple event types per subscription restored; HMAC secret rotation added`
+**Release title format:**
+```
+v<X.Y.Z+1> — <One-line summary of the most significant change in this release>
+```
