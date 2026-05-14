@@ -58,7 +58,7 @@ flowchart TD
 
         P -->|/create-pr| Q[Reads git branch · extracts JIRA ticket\nDrafts PR body · gh pr create\nPosts PR link to JIRA]
 
-        P -->|/generate-repo-doc| R[Re-reads source files\nRegenerates templates/repos/repo-name.md\nCommits to apim-claude-template]
+        P -->|/generate-repo-doc| R[Re-reads source files\nWrites CLAUDE.md into this repo\nCommits here · same PR as code]
 
         P -->|/setup-claude-md| S[Writes .claude/CLAUDE.md\nUpdates .gitignore]
 
@@ -89,7 +89,7 @@ flowchart TD
 |---|---|
 | `/create-pr` | Draft and raise a GitHub PR with JIRA integration — extracts ticket from branch, transitions JIRA status |
 | `/setup-claude-md` | Bootstrap `.claude/CLAUDE.md` in the current repo — run once per repo per developer |
-| `/generate-repo-doc` | Auto-generate a repo-specific template by reading OpenAPI spec, build files, source layout, and CI workflows |
+| `/generate-repo-doc` | Auto-generate `CLAUDE.md` in the current repo by reading OpenAPI spec, build files, source layout, and CI workflows — commits to this repo, raise PR here |
 | `/openapi-spec-reviewer` | Review an OpenAPI v3 spec against four lenses: data-sharing policy, infrastructure SLA, HMCTS API standards, and security standards |
 
 ---
