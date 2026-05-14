@@ -36,6 +36,14 @@
       "version": "1.0.0",
       "category": "skill",
       "tags": ["openapi", "spec-review", "security", "gdpr", "hmcts", "apim", "azure", "compliance"]
+    },
+    {
+      "name": "release",
+      "source": "./skills/release",
+      "description": "Cut a GitHub release for any APIM service — finds PRs merged since last tag, filters noise, computes next version, generates functional changelog, and creates the release via gh CLI",
+      "version": "1.0.0",
+      "category": "skill",
+      "tags": ["release", "github", "changelog", "versioning", "hmcts", "apim", "gh-cli"]
     }
   ]
 }
