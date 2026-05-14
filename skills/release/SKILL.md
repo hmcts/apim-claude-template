@@ -58,6 +58,7 @@ gh pr list --state merged --limit 50 \
 - Author is `app/dependabot` or `app/renovate`
 - Title starts with `chore:`, `chore(deps):`, `docs:`, `ci:`
 - Title matches pattern `bump <X> from <Y> to <Z>`
+- PR configures or migrates dependency management tooling (e.g. Renovate → Dependabot, auto-merge workflow setup)
 
 **Categorise what remains:**
 
@@ -82,11 +83,11 @@ Do not copy raw PR titles. Do not bullet-point the `## What changed` list verbat
 ```markdown
 ## What's changed in <version>
 
-### Bug Fixes
-**#<N> — <Plain English summary: what was broken and what the fix does>**
-
 ### New Features
 **#<N> — <Plain English summary: what the feature does and why it was added>**
+
+### Bug Fixes
+**#<N> — <Plain English summary: what was broken and what the fix does>**
 
 ### Improvements
 **#<N> — <Plain English summary: what improved and the benefit>**
@@ -157,11 +158,11 @@ Draft release notes:
 ---
 ## What's changed in v<X.Y.Z+1>
 
-### Bug Fixes
-**#<N> — <Plain-English summary synthesised from PR body: what was broken and what the fix does>**
-
 ### New Features
 **#<N> — <Plain-English summary synthesised from PR body: what the feature does and why it was added>**
+
+### Bug Fixes
+**#<N> — <Plain-English summary synthesised from PR body: what was broken and what the fix does>**
 
 ### Improvements
 **#<N> — <Plain-English summary synthesised from PR body: what improved and the benefit>**
