@@ -1,10 +1,10 @@
 ## Repo: service-cp-refdata-courthearing-courthouses
 
-Stateless proxy service that retrieves courthouse and courtroom reference data from the CP Reference Data backend by court ID; it implements the `api-cp-refdata-courthearing-courthouses` generated `CourtHouseApi` and `CourtRoomApi` interfaces.
+Stateless proxy service that retrieves courthouse and courtroom reference data from the CP Reference Data backend by court ID.
 
 **Pattern**: Stateless proxy
 **Spring Boot version**: 4.0.1
-**Implements**: `api-cp-refdata-courthearing-courthouses:1.0.8` — `CourtHouseApi`, `CourtRoomApi`
+**Implements**: `api-cp-refdata-courthearing-courthouses`
 
 ## Infrastructure
 
@@ -16,8 +16,8 @@ Stateless proxy service that retrieves courthouse and courtroom reference data f
 ## Source Structure
 
 **controllers/**
-- `CourtHousesController` — implements `CourtHouseApi`; receives `courtId` (UUID), delegates to `CourtHousesService.getCourtHouseByCourtId()`; returns `CourtHouseResponse`
-- `CourtRoomsController` — implements `CourtRoomApi`; receives `courtId` and `courtRoomId` (both UUID), delegates to `CourtHousesService.getCourthouseByCourtIdAndCourtRoomId()`; returns `CourtHouseResponse`
+- `CourtHousesController` — receives `courtId` (UUID), delegates to `CourtHousesService.getCourtHouseByCourtId()`
+- `CourtRoomsController` — receives `courtId` and `courtRoomId` (both UUID), delegates to `CourtHousesService.getCourthouseByCourtIdAndCourtRoomId()`
 - `GlobalExceptionHandler` — `@RestControllerAdvice`; maps `HttpClientErrorException(NOT_FOUND)` and `HttpServerErrorException` to HTTP responses
 - `RootController` — health/root endpoint
 

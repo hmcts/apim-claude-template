@@ -1,10 +1,10 @@
 ## Repo: service-cp-crime-prosecution-case-details
 
-Stateless proxy service that retrieves prosecution case details from the CP Progression backend by resolving a Case URN to a Case ID via a sidecar URN-mapper service; it implements the `api-cp-crime-prosecution-case-details` generated `CaseDetailsApi` interface.
+Stateless proxy service that retrieves prosecution case details from the CP Progression backend by resolving a Case URN to a Case ID via a sidecar URN-mapper service.
 
 **Pattern**: Stateless proxy
 **Spring Boot version**: 4.0.1
-**Implements**: `api-cp-crime-prosecution-case-details:1.0.0` — `CaseDetailsApi`
+**Implements**: `api-cp-crime-prosecution-case-details`
 
 ## Infrastructure
 
@@ -17,12 +17,12 @@ Stateless proxy service that retrieves prosecution case details from the CP Prog
 ## Source Structure
 
 **controllers/**
-- `CaseDetailController` — implements `CaseDetailsApi`; receives `caseUrn`, sanitises with OWASP `Encode.forJava()`, resolves to UUID via `CaseUrnMapperService`, delegates to `CaseDetailService`
+- `CaseDetailController` — receives `caseUrn`, sanitises with OWASP `Encode.forJava()`, resolves to UUID via `CaseUrnMapperService`, delegates to `CaseDetailService`
 - `GlobalExceptionHandler` — `@RestControllerAdvice`; maps exceptions to HTTP responses with `traceId`
 - `RootController` — health/root endpoint
 
 **services/**
-- `CaseDetailService` — calls `ProgressionClient` with the resolved `caseId` UUID; maps the `ProgressionResponse` to a `CaseDetailResponse`
+- `CaseDetailService` — calls `ProgressionClient` with the resolved `caseId` UUID; maps the Progression backend response to the API response shape
 - `CaseUrnMapperService` — thin wrapper around `CaseUrnMapperClient`; returns a `UUID` from the URN-mapper service
 
 **clients/**
@@ -30,7 +30,7 @@ Stateless proxy service that retrieves prosecution case details from the CP Prog
 - `CaseUrnMapperClient` — `RestTemplate` client to AMP URN-mapper service (`/urnmapper/{caseUrn}`); returns `CaseMapperResponse` containing the `caseId` UUID
 
 **mappers/**
-- `CaseDetailMapper` — MapStruct mapper; transforms `ProgressionResponse` → `CaseDetailResponse`
+- `CaseDetailMapper` — MapStruct mapper; transforms Progression backend response → API response
 
 **domain/**
 - `CaseMapperResponse` — internal DTO for URN-mapper response (`caseUrn`, `caseId`)

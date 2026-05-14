@@ -1,10 +1,10 @@
 ## Repo: service-cp-crime-scheduleandlist-courtschedule
 
-Stateless proxy service that retrieves allocated and unallocated court hearing schedules from the CP Listing backend by resolving a Case URN to a Case ID via a sidecar URN-mapper service; it implements the `api-cp-crime-schedulingandlisting-courtschedule` generated `CourtScheduleApi` interface.
+Stateless proxy service that retrieves allocated and unallocated court hearing schedules from the CP Listing backend by resolving a Case URN to a Case ID via a sidecar URN-mapper service.
 
 **Pattern**: Stateless proxy
 **Spring Boot version**: 4.0.1
-**Implements**: `api-cp-crime-schedulingandlisting-courtschedule:1.0.8` — `CourtScheduleApi`
+**Implements**: `api-cp-crime-schedulingandlisting-courtschedule`
 
 ## Infrastructure
 
@@ -17,19 +17,19 @@ Stateless proxy service that retrieves allocated and unallocated court hearing s
 ## Source Structure
 
 **controllers/**
-- `CourtScheduleController` — implements `CourtScheduleApi`; receives `caseUrn`, sanitises with OWASP `Encode.forJava()`, resolves to caseId String via `CaseUrnMapperService`, delegates to `CourtScheduleService`
+- `CourtScheduleController` — receives `caseUrn`, sanitises with OWASP `Encode.forJava()`, resolves to caseId String via `CaseUrnMapperService`, delegates to `CourtScheduleService`
 - `GlobalExceptionHandler` — `@RestControllerAdvice`; maps exceptions to HTTP responses
 - `RootController` — health/root endpoint
 
 **services/**
-- `CourtScheduleService` — calls `CourtScheduleClient` with the resolved caseId; maps the backend `HearingResponse` to a `CourtScheduleResponse`
+- `CourtScheduleService` — calls `CourtScheduleClient` with the resolved caseId; maps the Listing backend response to the API response shape
 - `CaseUrnMapperService` — `RestTemplate`-based service that calls the AMP URN-mapper; returns a `String` caseId (not a UUID — note difference from `service-cp-crime-prosecution-case-details`)
 
 **clients/**
 - `CourtScheduleClient` — `RestTemplate` client to CP Listing backend; sets `CJSCPPUID` header; GETs allocated-and-unallocated hearings
 
 **mappers/**
-- `HearingsMapper` — MapStruct mapper; transforms `HearingResponse` → `CourtScheduleResponse`
+- `HearingsMapper` — MapStruct mapper; transforms Listing backend response → API response
 
 **domain/**
 - `CaseMapperResponse` — internal DTO for URN-mapper response (`caseId` as String)

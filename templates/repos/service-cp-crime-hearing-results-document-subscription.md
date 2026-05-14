@@ -1,10 +1,10 @@
 ## Repo: service-cp-crime-hearing-results-document-subscription
 
-DB-backed event-driven service that receives hearing-results document notifications from Progression/HearingNows services, fans them out to registered subscribers via Azure Service Bus, and serves document content on demand; it implements the `api-cp-crime-hearing-results-document-subscription` generated `SubscriptionApi`, `NotificationApi`, and `InternalApi` interfaces.
+DB-backed event-driven service that receives hearing-results document notifications from Progression/HearingNows services, fans them out to registered subscribers via Azure Service Bus, and serves document content on demand.
 
 **Pattern**: DB-backed
 **Spring Boot version**: 4.0.6
-**Implements**: `api-cp-crime-hearing-results-document-subscription:2.0.9` — `SubscriptionApi`, `NotificationApi`, `InternalApi`
+**Implements**: `api-cp-crime-hearing-results-document-subscription`
 
 ## Infrastructure
 
@@ -21,8 +21,8 @@ DB-backed event-driven service that receives hearing-results document notificati
 ## Source Structure
 
 **subscription/controllers/**
-- `SubscriptionController` — implements `SubscriptionApi`; CRUD for client subscriptions and HMAC secret rotation; extracts `clientId` from MDC via `ClientIdResolutionFilter.MDC_CLIENT_ID` on every call
-- `NotificationController` — implements `InternalApi` and `NotificationApi`; receives inbound PCR events from Progression/HearingNows; queues to `hrds.notifications.inbound` if event type is known; serves document bytes via `getDocument()`
+- `SubscriptionController` — CRUD for client subscriptions and HMAC secret rotation; extracts `clientId` from MDC via `ClientIdResolutionFilter.MDC_CLIENT_ID` on every call
+- `NotificationController` — receives inbound PCR events from Progression/HearingNows; queues to `hrds.notifications.inbound` if event type is known; serves document bytes via `getDocument()`
 - `MockCallbackController` — test/dev endpoint that receives outbound callback POSTs and logs them
 - `GlobalExceptionHandler` — `@RestControllerAdvice`; maps `EntityNotFoundException` → 404, `ResponseStatusException` → passthrough
 - `RootController` — health/root endpoint
@@ -187,7 +187,7 @@ Migrations live in `src/main/resources/db/migration/` using naming `V<VERSION>__
 
 **Apple Silicon warning**: SQL Edge (`mcr.microsoft.com/azure-sql-edge`) must be run with `platform: linux/amd64` on M-chip Macs — see `docker/docker-compose.yml` comments.
 
-**OpenAPI generation**: This repo uses `id 'org.openapi.generator' version '7.22.0'`. Run `./gradlew openApiGenerate` after spec changes; never edit `build/generated/` directly.
+**OpenAPI generation**: Run `./gradlew openApiGenerate` after spec changes; never edit `build/generated/` directly.
 
 **`MockCallbackController`**: A dev/test endpoint that accepts inbound callback POSTs. Only active in non-production environments. Do not remove — it is used in API tests to verify end-to-end callback delivery.
 

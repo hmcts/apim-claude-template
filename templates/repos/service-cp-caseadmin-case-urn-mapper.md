@@ -1,10 +1,10 @@
 ## Repo: service-cp-caseadmin-case-urn-mapper
 
-Stateless proxy service that resolves a Case URN to a Case File ID by calling the CP system-id-mapper backend; it implements the `api-cp-caseadmin-case-urn-mapper` generated `CaseIdByCaseUrnApi` interface and caches results in-memory.
+Stateless proxy service that resolves a Case URN to a Case File ID by calling the CP system-id-mapper backend, with in-memory caching of results.
 
 **Pattern**: Stateless proxy (with in-memory cache)
 **Spring Boot version**: 4.0.3
-**Implements**: `api-cp-caseadmin-case-urn-mapper:1.0.7` — `CaseIdByCaseUrnApi`
+**Implements**: `api-cp-caseadmin-case-urn-mapper`
 
 ## Infrastructure
 
@@ -17,7 +17,7 @@ Stateless proxy service that resolves a Case URN to a Case File ID by calling th
 ## Source Structure
 
 **controllers/**
-- `CaseUrnMapperController` — implements `CaseIdByCaseUrnApi`; validates caseUrn against regex `^[0-9a-zA-Z]{10,40}$`; accepts optional `?refresh=true` query param to bypass/refresh cache
+- `CaseUrnMapperController` — validates caseUrn against regex `^[0-9a-zA-Z]{10,40}$`; accepts optional `?refresh=true` query param to bypass/refresh cache
 - `GlobalExceptionHandler` — `@RestControllerAdvice`; maps exceptions to HTTP responses with `traceId`
 - `RootController` — health/root endpoint
 
