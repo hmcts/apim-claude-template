@@ -1,0 +1,11 @@
+{
+  "name": "release",
+  "version": "1.0.0",
+  "description": "Cut a GitHub release for any APIM service — finds PRs merged since last tag, filters noise, computes next version, generates functional changelog, and creates the release via gh CLI",
+  "author": {
+    "name": "HMCTS APIM",
+    "email": "srivani@scrumconnect.com"
+  },
+  "license": "MIT",
+  "keywords": ["release", "github", "changelog", "versioning", "hmcts", "apim", "gh-cli"]
+}
