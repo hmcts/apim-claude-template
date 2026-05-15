@@ -32,15 +32,14 @@ flowchart TD
     subgraph INSTALL["⚙️ One-time setup (per developer machine)"]
         A[Developer installs Claude Code\nnpm install -g @anthropic-ai/claude-code] --> B[Install agentic-plugins-marketplace\n/marketplace]
         B --> C[Install apim-claude-template plugin\nfrom marketplace]
-        C --> D[4 skills now available globally\n/create-pr  /setup-claude-md\n/generate-repo-doc  /openapi-spec-reviewer]
+        C --> D[3 skills now available globally\n/create-pr  /wire-claude-context\n/openapi-spec-reviewer]
     end
 
-    subgraph ONBOARD["📦 New repo onboarding (run once per repo)"]
-        E[New api-cp-* or service-cp-* repo created] --> F[Developer runs\n/generate-repo-doc]
-        F --> G[Skill reads real source files\nopenapi-spec.yml · build.gradle\ntest classes · CI workflows]
-        G --> H[Writes CLAUDE.md into this repo\ncommitted here · same PR as code]
-        H --> I[Developer runs\n/setup-claude-md in the repo]
-        I --> K[Creates .claude/CLAUDE.md\ngitignored · 2 @import lines]
+    subgraph ONBOARD["📦 New repo onboarding (run once per repo per developer)"]
+        E[New api-cp-* or service-cp-* repo] --> F[Developer runs\n/wire-claude-context]
+        F --> G[Creates gitignored .claude/CLAUDE.md\n3 @import lines pointing to shared templates]
+        G --> H[Developer runs /init\nClaude reads HMCTS standards from context\nGenerates + commits compliant CLAUDE.md]
+        H --> K[Repo fully wired]
     end
 
     subgraph SESSION["🔄 Every Claude Code session"]
@@ -50,7 +49,8 @@ flowchart TD
         M1 --> N1[Repo-specific context\nendpoints · env vars · rules]
         M2 --> N2[shared-code-rules.md]
         M2 --> N3[api-spec-shared.md\nor service-shared.md]
-        N1 & N2 & N3 --> O[Claude has full context\nteam rules · patterns · repo specifics]
+        M2 --> N4[claude-md-standards.md\nHMCTS authoring standards for /init]
+        N1 & N2 & N3 & N4 --> O[Claude has full context\nteam rules · patterns · repo specifics · authoring standards]
     end
 
     subgraph COMMAND["⚡ When a skill command is fired"]
@@ -58,9 +58,7 @@ flowchart TD
 
         P -->|/create-pr| Q[Reads git branch · extracts JIRA ticket\nDrafts PR body · gh pr create\nPosts PR link to JIRA]
 
-        P -->|/generate-repo-doc| R[Re-reads source files\nWrites CLAUDE.md into this repo\nCommits here · same PR as code]
-
-        P -->|/setup-claude-md| S[Writes .claude/CLAUDE.md\nUpdates .gitignore]
+        P -->|/wire-claude-context| S[Creates .claude/CLAUDE.md with 3 @imports\nupdates .gitignore · instructs to run /init next]
 
         P -->|/openapi-spec-reviewer| T[Loads 4 knowledge files\ndata-sharing-policy\ninfrastructure-sla\napi-standards · security-standards]
         T --> U[Reviews spec against\neach lens in sequence]
@@ -88,8 +86,7 @@ flowchart TD
 | Command | What it does |
 |---|---|
 | `/create-pr` | Draft and raise a GitHub PR with JIRA integration — extracts ticket from branch, transitions JIRA status |
-| `/setup-claude-md` | Bootstrap `.claude/CLAUDE.md` in the current repo — run once per repo per developer |
-| `/generate-repo-doc` | Auto-generate `CLAUDE.md` in the current repo by reading OpenAPI spec, build files, source layout, and CI workflows — commits to this repo, raise PR here |
+| `/wire-claude-context` | Create the gitignored `.claude/CLAUDE.md` with 3 shared template imports — run once per repo per developer, then run `/init` to generate the committed `CLAUDE.md` |
 | `/openapi-spec-reviewer` | Review an OpenAPI v3 spec against four lenses: data-sharing policy, infrastructure SLA, HMCTS API standards, and security standards |
 
 ---
@@ -131,16 +128,16 @@ All repos must be cloned into the **same parent directory** — the `@import` pa
 
 ```bash
 cd api-cp-<repo-name>
-/setup-claude-md
+/wire-claude-context   # creates gitignored .claude/CLAUDE.md with 3 @imports
+/init                  # generates committed CLAUDE.md using HMCTS standards now in context
 ```
 
-That's it. Claude Code will load shared rules + category standards + repo-specific guidance on every session.
+Claude Code will load shared rules + category standards + authoring standards + repo-specific guidance on every session.
 
 ---
 
 ## Adding a new repo
 
-> **Required before the first developer runs `/setup-claude-md`.**
 > See [CONTRIBUTING.md](CONTRIBUTING.md) for the full checklist.
 
 ```bash
@@ -148,13 +145,13 @@ That's it. Claude Code will load shared rules + category standards + repo-specif
 cd ~/HMCTS/APIM
 git clone git@github.com:hmcts/api-cp-<new-name>.git
 
-# 2. Generate CLAUDE.md — writes directly into the new repo
+# 2. Wire shared context — creates .claude/CLAUDE.md with 3 @import lines
 cd api-cp-<new-name>
-/generate-repo-doc
-# Commits CLAUDE.md to this repo — raise a PR here, not in apim-claude-template
+/wire-claude-context
 
-# 3. Set up local Claude context (each developer, once per machine)
-/setup-claude-md
+# 3. Generate repo-specific CLAUDE.md — /init now has HMCTS standards in context
+/init
+# Commits CLAUDE.md to this repo — raise a PR with that commit
 ```
 
 ---
@@ -166,11 +163,11 @@ apim-claude-template/
 ├── templates/
 │   ├── shared-code-rules.md    ← team-wide code rules (all repos)
 │   ├── api-spec-shared.md      ← shared guidance for all api-cp-* repos
-│   └── service-shared.md       ← shared guidance for all service-cp-* repos
+│   ├── service-shared.md       ← shared guidance for all service-cp-* repos
+│   └── claude-md-standards.md ← HMCTS authoring standards for /init (what to include, what to omit, debt flags)
 └── skills/
     ├── create-pr/
-    ├── setup-claude-md/
-    ├── generate-repo-doc/
+    ├── wire-claude-context/
     └── openapi-spec-reviewer/
         └── knowledge/
             ├── data-sharing-policy.md   ← UK GDPR / DPA 2018 rules
@@ -181,7 +178,7 @@ apim-claude-template/
 Each api-cp-* / service-cp-* repo:
 ├── CLAUDE.md                   ← committed — repo-specific context
 └── .claude/
-    ├── CLAUDE.md               ← gitignored — 2 shared @import lines
+    ├── CLAUDE.md               ← gitignored — 3 shared @import lines
     └── settings.local.json     ← committed — Claude Code settings
 ```
 
@@ -195,6 +192,7 @@ Each api-cp-* / service-cp-* repo:
 | API spec pattern | `templates/api-spec-shared.md` | Any developer | Automatic — all `api-cp-*` |
 | Service pattern | `templates/service-shared.md` | Any developer | Automatic — all `service-cp-*` |
 | One repo's architecture | Update `CLAUDE.md` in that repo | Repo owner | Committed in same PR as code change |
+| HMCTS CLAUDE.md authoring standards | `templates/claude-md-standards.md` | Any developer | Automatic — all repos on next session |
 | OpenAPI review policy | `skills/openapi-spec-reviewer/knowledge/` | APIM team | Automatic — all reviewers |
 
 All changes go through a PR against `master`. One merged PR = all repos updated.
