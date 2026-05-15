@@ -199,7 +199,7 @@ Each api-cp-* / service-cp-* repo:
 | API spec pattern | `templates/api-spec-shared.md` | Any developer | Automatic — all `api-cp-*` |
 | Service pattern | `templates/service-shared.md` | Any developer | Automatic — all `service-cp-*` |
 | One repo's architecture | Update `CLAUDE.md` in that repo | Repo owner | Committed in same PR as code change |
-| HMCTS CLAUDE.md authoring standards | `templates/claude-md-standards.md` | Any developer | Automatic — all repos on next session |
+| HMCTS CLAUDE.md authoring standards | `templates/claude-md-standards.md` | Any developer | Automatic — all repos on next session; re-run `/init` in each repo to apply any new section requirements to existing `CLAUDE.md` files |
 | OpenAPI review policy | `skills/openapi-spec-reviewer/knowledge/` | APIM team | Automatic — all reviewers |
 
 All changes go through a PR against `master`. One merged PR = all repos updated.
