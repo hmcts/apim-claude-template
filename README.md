@@ -12,13 +12,16 @@ Each `api-cp-*` / `service-cp-*` repo carries two context files that Claude Code
 | File | Committed? | Owned by | Contains |
 |---|---|---|---|
 | `CLAUDE.md` (repo root) | Yes | Each repo | Repo-specific: endpoints, env vars, infra, architecture rules |
-| `.claude/CLAUDE.md` | No — gitignored | Developer local | 2 `@import` lines pointing to shared templates here |
+| `.claude/CLAUDE.md` | No — gitignored | Developer local | 3 `@import` lines pointing to shared templates here |
 
 The `.claude/CLAUDE.md` for an `api-cp-*` repo looks like:
 ```
 @../../apim-claude-template/templates/shared-code-rules.md
 @../../apim-claude-template/templates/api-spec-shared.md
+@../../apim-claude-template/templates/claude-md-standards.md
 ```
+
+For a `service-cp-*` repo, the second line is `service-shared.md` instead of `api-spec-shared.md`.
 
 When a shared template changes here, all repos pick it up automatically — no per-repo commits needed.
 When a repo's architecture changes, update `CLAUDE.md` in that repo — no apim-claude-template PR needed.
@@ -32,7 +35,7 @@ flowchart TD
     subgraph INSTALL["⚙️ One-time setup (per developer machine)"]
         A[Developer installs Claude Code\nnpm install -g @anthropic-ai/claude-code] --> B[Install agentic-plugins-marketplace\n/marketplace]
         B --> C[Install apim-claude-template plugin\nfrom marketplace]
-        C --> D[3 skills now available globally\n/create-pr  /wire-claude-context\n/openapi-spec-reviewer]
+        C --> D[4 skills now available globally\n/wire-claude-context  /create-pr\n/release  /openapi-spec-reviewer]
     end
 
     subgraph ONBOARD["📦 New repo onboarding (run once per repo per developer)"]
@@ -60,6 +63,8 @@ flowchart TD
 
         P -->|/wire-claude-context| S[Creates .claude/CLAUDE.md with 3 @imports\nupdates .gitignore · instructs to run /init next]
 
+        P -->|/release| R[Finds PRs since last tag\nFilters noise · computes version\nGenerates changelog · gh release create]
+
         P -->|/openapi-spec-reviewer| T[Loads 4 knowledge files\ndata-sharing-policy\ninfrastructure-sla\napi-standards · security-standards]
         T --> U[Reviews spec against\neach lens in sequence]
         U --> V[Scored report\nCritical · Warning · Info\nReadiness score /100]
@@ -85,8 +90,9 @@ flowchart TD
 
 | Command | What it does |
 |---|---|
-| `/create-pr` | Draft and raise a GitHub PR with JIRA integration — extracts ticket from branch, transitions JIRA status |
 | `/wire-claude-context` | Create the gitignored `.claude/CLAUDE.md` with 3 shared template imports — run once per repo per developer, then run `/init` to generate the committed `CLAUDE.md` |
+| `/create-pr` | Draft and raise a GitHub PR with JIRA integration — extracts ticket from branch, transitions JIRA status |
+| `/release` | Cut a GitHub release — finds PRs merged since last tag, filters noise, computes next version, generates changelog, creates the release via `gh` CLI |
 | `/openapi-spec-reviewer` | Review an OpenAPI v3 spec against four lenses: data-sharing policy, infrastructure SLA, HMCTS API standards, and security standards |
 
 ---
@@ -166,8 +172,9 @@ apim-claude-template/
 │   ├── service-shared.md       ← shared guidance for all service-cp-* repos
 │   └── claude-md-standards.md ← HMCTS authoring standards for /init (what to include, what to omit, debt flags)
 └── skills/
-    ├── create-pr/
     ├── wire-claude-context/
+    ├── create-pr/
+    ├── release/
     └── openapi-spec-reviewer/
         └── knowledge/
             ├── data-sharing-policy.md   ← UK GDPR / DPA 2018 rules
