@@ -1,14 +1,14 @@
-# Skill: Setup Claude MD
+# Skill: Wire Claude Context
 
 ## Trigger
 
 Invoke this skill when a user asks to:
-- Set up Claude context for this repo
+- Wire Claude context for this repo
+- Set up shared template imports for Claude
+- Run `/wire-claude-context`
 - Bootstrap `.claude/CLAUDE.md`
-- Run `/setup-claude-md`
-- Initialise Claude guidance for this repository
 
-Invocation command: `/setup-claude-md`
+Invocation command: `/wire-claude-context`
 
 ---
 
@@ -27,41 +27,33 @@ echo "Repo: $REPO_NAME"
 - If `$REPO_NAME` starts with `service-cp-` → **Service repo** → use `service-shared.md`
 - Otherwise → stop and tell the user: *"This skill only supports `api-cp-*` and `service-cp-*` repos. Current directory: `$REPO_NAME`."*
 
-### Step 3 — Check the repo-specific CLAUDE.md exists
-
-```bash
-ls CLAUDE.md 2>/dev/null
-```
-
-- If the file **does not exist**: stop and tell the user:
-  *"No `CLAUDE.md` found in this repo. Run `/generate-repo-doc` first to auto-generate it, then re-run `/setup-claude-md`."*
-- If the file **exists**: proceed.
-
-### Step 4 — Create `.claude/` directory if needed
+### Step 3 — Create `.claude/` directory if needed
 
 ```bash
 mkdir -p .claude
 ```
 
-### Step 5 — Write `.claude/CLAUDE.md`
+### Step 4 — Write `.claude/CLAUDE.md`
 
-Write exactly 2 lines:
+Write exactly 3 lines:
 
 **For `api-cp-*` repos:**
 ```
 @../../apim-claude-template/templates/shared-code-rules.md
 @../../apim-claude-template/templates/api-spec-shared.md
+@../../apim-claude-template/templates/claude-md-standards.md
 ```
 
 **For `service-cp-*` repos:**
 ```
 @../../apim-claude-template/templates/shared-code-rules.md
 @../../apim-claude-template/templates/service-shared.md
+@../../apim-claude-template/templates/claude-md-standards.md
 ```
 
 Claude Code automatically reads both `CLAUDE.md` (repo root, committed) and `.claude/CLAUDE.md` (gitignored) on every session. No explicit import of `CLAUDE.md` is needed — it is loaded natively.
 
-### Step 6 — Ensure `.claude/CLAUDE.md` is gitignored
+### Step 5 — Ensure `.claude/CLAUDE.md` is gitignored
 
 Check if `.gitignore` already contains `.claude/CLAUDE.md`:
 
@@ -79,20 +71,22 @@ echo ".claude/CLAUDE.md" >> .gitignore
 
 Note: `.claude/settings.local.json` and the root `CLAUDE.md` must remain committed — do **not** add `.claude/` (the whole directory) to `.gitignore`, only `.claude/CLAUDE.md`.
 
-### Step 7 — Confirm
+### Step 6 — Confirm
 
 Tell the user:
 
-> ✓ `.claude/CLAUDE.md` created for `<REPO_NAME>`.
+> ✓ `.claude/CLAUDE.md` created for `<REPO_NAME>` (gitignored).
 >
 > On every Claude Code session, Claude loads:
 > - `CLAUDE.md` (this repo) — repo-specific context, committed here
 > - `templates/shared-code-rules.md` — team-wide code rules
 > - `templates/api-spec-shared.md` (or `service-shared.md`) — repo-category standards
+> - `templates/claude-md-standards.md` — HMCTS guidance for generating `CLAUDE.md`
+>
+> **Next step:** run `/init` to generate (or refresh) the committed `CLAUDE.md` for this repo.
+> `/init` will use the HMCTS standards now in context to produce a compliant, non-duplicating file.
 >
 > When shared templates change in `apim-claude-template`, this repo picks them up automatically — no further action needed.
->
-> When this repo's architecture changes, update `CLAUDE.md` and commit it in the same PR as the code change.
 
 ---
 
@@ -100,6 +94,6 @@ Tell the user:
 
 - **Never commit `.claude/CLAUDE.md`** — it is a local developer file; only gitignore it, never stage it.
 - **Do not touch `.claude/settings.local.json`** — that file is separate and is committed.
-- **Do not touch root `CLAUDE.md`** — that file is committed and owned by this repo; `/generate-repo-doc` manages it.
+- **Do not touch root `CLAUDE.md`** — that file is committed and owned by this repo; use `/init` to generate or refresh it.
 - **Paths are relative** from `.claude/CLAUDE.md` — `../../apim-claude-template/` navigates up to the workspace root and into the template repo. This works on any machine where repos are cloned as siblings.
 - **Idempotent** — re-running this skill overwrites `.claude/CLAUDE.md` safely with the same content.

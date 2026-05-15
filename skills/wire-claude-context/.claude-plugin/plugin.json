@@ -1,0 +1,11 @@
+{
+  "name": "wire-claude-context",
+  "version": "1.0.0",
+  "description": "Create the gitignored .claude/CLAUDE.md that wires shared team standards into the local Claude session — run once per repo per developer, then use /init to generate the committed CLAUDE.md",
+  "author": {
+    "name": "HMCTS APIM",
+    "email": "srivani@scrumconnect.com"
+  },
+  "license": "MIT",
+  "keywords": ["claude-md", "context", "onboarding", "hmcts", "apim", "templates", "wire"]
+}
