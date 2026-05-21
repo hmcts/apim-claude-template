@@ -54,12 +54,75 @@ src/main/java/uk/gov/hmcts/cp/
 
 ## Architecture Rules
 
-- **Layering**: Controller → Service → Client. No layer skipping. No business logic in controllers or clients.
-- **Controllers are thin**: delegate entirely to services; return `ResponseEntity` only.
+### Layer Model
+
+Each layer has one responsibility and communicates only with the layer directly below it.
+
+| Layer | Responsibility | Constraint |
+|---|---|---|
+| **Controller** | Receive HTTP; validate thoroughly; delegate to Manager or Service | No business logic; no object construction |
+| **Manager** | Orchestrate multiple services; prevent bi-directional service dependencies | No direct repository calls |
+| **Service** | Business logic; call clients and repositories via mappers | Never construct objects inline — delegate all construction to a mapper |
+| **Mapper** | Convert objects between layers AND create any new objects | Owns all `.builder()` calls; has its own focused unit test covering field-by-field construction |
+| **Repository** | JPA entity interactions | Must have a `@DataJpaTest` test proving Flyway schema matches JPA entity |
+| **Client** | External HTTP calls | No business logic |
+
+**Mapper-creates-objects rule:** Mappers do not only convert — they also create new objects. A service method must never call `.builder()` directly. This means:
+- Service unit tests mock the mapper and verify the call — no `ArgumentCaptor` needed
+- All construction logic is tested once in a focused mapper test
+
+**Other layering rules:**
+- **Controllers are thin**: delegate entirely to services or managers; return `ResponseEntity` only.
 - **MapStruct mappers** in `src/main/java/.../mappers/` — never edit generated `*Impl` classes.
-- **Error handling**: `EntityNotFoundException` for 404s; `ResponseStatusException` for business errors; `GlobalExceptionHandler` (@RestControllerAdvice) maps everything else.
-- **Input validation**: use `org.owasp.encoder.Encode.forJava()` before passing URN or case ID inputs to backend calls.
+- **Error handling**: `EntityNotFoundException` for 404s; `ResponseStatusException` for business errors; `GlobalExceptionHandler` (`@RestControllerAdvice`) maps everything else.
+- **Input validation**: validate at the earliest boundary — controller (`@Valid`) for HTTP flows, `ServiceBusHandlers` for Service Bus flows. Domain services must not throw `IllegalArgumentException` for input that should have been rejected upstream. Use `org.owasp.encoder.Encode.forJava()` before passing URN or case ID inputs to backend calls.
 - **HTTP clients**: build URLs with `UriComponentsBuilder`; set `CJSCPPUID` header on every backend call.
+
+### Feature Toggle Placement
+
+Feature toggles (`@Value`-injected booleans) are decision-layer concerns. Five rules apply — all exist to ensure that when a toggle is removed, a grep for the property key finds every place to clean up with no hidden data-state remnants.
+
+**T1 — `@Value` toggle fields live only in orchestrating services.**
+Persist/domain services and controllers must not declare `@Value` toggle fields.
+
+**T2 — Toggle check is explicit and at call-site.**
+Reference the boolean field directly before calling downstream — never delegate to a private method that returns a sentinel value.
+```java
+// CORRECT
+if (hearingEventJsonEnabled) {
+    hearingEventPayloadService.saveIfAbsent(eventPayload);
+}
+// WRONG — toggle hidden inside private method returning null on toggle-off
+private UUID persist(EventPayload p) {
+    if (hearingEventJsonEnabled) { return svc.save(p); }
+    return null;
+}
+```
+
+**T3 — Switch state must not be inferred from data state.**
+Do not return `null` (or any sentinel) to encode toggle-off, then null-check downstream to infer state. When the toggle is removed, null checks in data flow do not appear in a grep and survive as dead code.
+```java
+// WRONG — null check survives toggle removal invisibly
+final UUID id = hearingEventJsonEnabled ? svc.save(p) : null;
+if (id != null) { subscriptionSvc.save(subscriptionId, id); }
+
+// CORRECT — both branches are findable on removal
+if (hearingEventJsonEnabled) {
+    final UUID id = svc.save(p);
+    subscriptionSvc.save(subscriptionId, id);
+}
+```
+
+**T4 — Persist/domain services are toggle-blind.**
+Any class that owns a `Repository` must not declare any `@Value` toggle field. It does exactly what its method name says, unconditionally.
+
+**T5 — No dead toggle fields.**
+If a `@Value` toggle field is declared but never read in that class, remove it.
+
+### Coding Patterns
+
+- **Explicit idempotency**: when a persist method skips a duplicate (`existsBy…` → return), it must log at INFO at the skip site. Silent returns with no trace are not permitted.
+- **Test naming**: all test methods follow `subject_should_doOutcome` or `subject_should_doOutcome_whenCondition`. Mixed styles within one class are not permitted.
 
 ## Configuration Standards
 
