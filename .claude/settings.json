@@ -1,0 +1,51 @@
+{
+  "enabledPlugins": {
+    "create-pr@apim-claude-template": true,
+    "wire-claude-context@apim-claude-template": true,
+    "openapi-spec-reviewer@apim-claude-template": true,
+    "release@apim-claude-template": true,
+    "review-checklist@apim-claude-template": true,
+    "code-review@agentic-plugins-marketplace": true,
+    "conventional-commit@agentic-plugins-marketplace": true,
+    "explain-codebase@agentic-plugins-marketplace": true,
+    "bdd-workflow@agentic-plugins-marketplace": true,
+    "adr-template@agentic-plugins-marketplace": true,
+    "marketplace-skill@agentic-plugins-marketplace": true,
+    "audit-log@agentic-plugins-marketplace": true,
+    "notify-on-stop@agentic-plugins-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "agentic-plugins-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/hmcts/agentic-plugins-marketplace.git"
+      }
+    }
+  },
+  "disabledMcpjsonServers": [
+    "crime-prosecution-case-details"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew*)",
+      "Bash(mvn*)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(spectral*)",
+      "Bash(find . *)",
+      "Bash(ls*)",
+      "Bash(grep*)",
+      "Bash(docker*)",
+      "Bash(docker-compose*)",
+      "Bash(xargs cat *)"
+    ],
+    "deny": [
+      "Bash(**/.env)",
+      "Read(**/.env)",
+      "Write(**/.env)",
+      "Bash(**/.envrc)",
+      "Read(**/.envrc)",
+      "Write(**/.envrc)"
+    ]
+  }
+}

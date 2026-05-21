@@ -15,3 +15,7 @@
 
 # Logs
 *.log
+
+# Claude Code personal settings (committed settings.json stays tracked)
+.claude/settings.local.json
+.claude/CLAUDE.md
