@@ -4,7 +4,7 @@
     "wire-claude-context@apim-claude-template": true,
     "openapi-spec-reviewer@apim-claude-template": true,
     "release@apim-claude-template": true,
-    "review-checklist@apim-claude-template": true,
+    "review-checklist@agentic-plugins-marketplace": true,
     "code-review@agentic-plugins-marketplace": true,
     "conventional-commit@agentic-plugins-marketplace": true,
     "explain-codebase@agentic-plugins-marketplace": true,
