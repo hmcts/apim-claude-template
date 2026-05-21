@@ -1,3 +1,8 @@
+---
+name: create-pr
+description: Use when the user wants to create a pull request, raise a PR, or open a PR — extracts JIRA ticket from branch name, drafts a rich PR description, runs gh pr create, and transitions the JIRA ticket status.
+---
+
 # Skill: Create PR
 
 ## Trigger

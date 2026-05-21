@@ -1,3 +1,8 @@
+---
+name: openapi-spec-reviewer
+description: Use when the user wants to review, audit, or check an OpenAPI v3 spec — applies HMCTS data-sharing policy (UK GDPR/DPA 2018), infrastructure SLA (Azure APIM/AKS), API standards, and security standards (OAuth 2, TLS, input validation). Returns a scored report with Critical/Warning/Info findings.
+---
+
 # Skill: OpenAPI Spec Reviewer
 
 ## Trigger
