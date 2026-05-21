@@ -1,3 +1,8 @@
+---
+name: wire-claude-context
+description: Use when the user wants to wire Claude context for a repo, set up shared templates, or run the one-time per-repo Claude onboarding — creates the gitignored .claude/CLAUDE.md with three @import lines pointing to shared apim-claude-template standards.
+---
+
 # Skill: Wire Claude Context
 
 ## Trigger
