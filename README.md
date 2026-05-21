@@ -186,7 +186,11 @@ Each api-cp-* / service-cp-* repo:
 ├── CLAUDE.md                   ← committed — repo-specific context
 └── .claude/
     ├── CLAUDE.md               ← gitignored — 3 shared @import lines
-    └── settings.local.json     ← committed — Claude Code settings
+    └── settings.local.json     ← gitignored — personal local overrides
+
+apim-claude-template itself:
+└── .claude/
+    └── settings.json           ← committed — canonical plugin set and CP permissions
 ```
 
 ---
