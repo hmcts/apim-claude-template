@@ -36,14 +36,6 @@
       "version": "1.0.0",
       "category": "skill",
       "tags": ["release", "github", "changelog", "versioning", "hmcts", "apim", "gh-cli"]
-    },
-    {
-      "name": "review-checklist",
-      "source": "./skills/review-checklist",
-      "description": "Structured pass/fail PR review checklist covering correctness, tests, security, code quality, dependencies, docs, and CP Service Patterns (T1–T5 feature toggles, M1–M3 mappers, V1, I1, N1)",
-      "version": "1.0.0",
-      "category": "skill",
-      "tags": ["review", "checklist", "pr", "code-review", "hmcts", "apim", "cp-service", "feature-toggle", "mapper"]
     }
   ]
 }
