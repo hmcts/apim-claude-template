@@ -87,29 +87,18 @@ Persist/domain services and controllers must not declare `@Value` toggle fields.
 
 **T2 — Toggle check is explicit and at call-site.**
 Reference the boolean field directly before calling downstream — never delegate to a private method that returns a sentinel value.
-```java
-// CORRECT
-if (hearingEventJsonEnabled) {
-    hearingEventPayloadService.saveIfAbsent(eventPayload);
-}
-// WRONG — toggle hidden inside private method returning null on toggle-off
-private UUID persist(EventPayload p) {
-    if (hearingEventJsonEnabled) { return svc.save(p); }
-    return null;
-}
-```
 
 **T3 — Switch state must not be inferred from data state.**
 Do not return `null` (or any sentinel) to encode toggle-off, then null-check downstream to infer state. When the toggle is removed, null checks in data flow do not appear in a grep and survive as dead code.
 ```java
 // WRONG — null check survives toggle removal invisibly
-final UUID id = hearingEventJsonEnabled ? svc.save(p) : null;
-if (id != null) { subscriptionSvc.save(subscriptionId, id); }
+final UUID id = featureEnabled ? svc.save(p) : null;
+if (id != null) { downstreamSvc.save(id); }
 
 // CORRECT — both branches are findable on removal
-if (hearingEventJsonEnabled) {
+if (featureEnabled) {
     final UUID id = svc.save(p);
-    subscriptionSvc.save(subscriptionId, id);
+    downstreamSvc.save(id);
 }
 ```
 
